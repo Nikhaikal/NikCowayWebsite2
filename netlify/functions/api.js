@@ -2,7 +2,7 @@ const express = require("express");
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
-const { getStore } = require("@netlify/blobs");
+const { getStore, connectLambda } = require("@netlify/blobs");
 const serverless = require("serverless-http");
 
 const app = express();
@@ -237,4 +237,13 @@ app.get("/blog/:slug", async (req,res)=>{
 <main class="article-page"><div class="article-wrap"><span class="eyebrow">COWAY INSIGHTS</span><h1>${esc(a.title)}</h1><p class="article-date">${new Date(a.date).toLocaleDateString("ms-MY",{day:"numeric",month:"long",year:"numeric"})}</p>${a.coverImage?`<img class="article-cover" src="${esc(a.coverImage)}" alt="${esc(a.title)}">`:""}<article class="article-content">${content}</article><a class="btn primary" href="/">← Kembali ke Aliff Coway</a></div></main></body></html>`);
 });
 
-module.exports.handler = serverless(app);
+const lambdaHandler = serverless(app);
+
+// This project uses serverless-http, which runs as a Netlify
+// Lambda-compatible (Functions v1) handler. Netlify Blobs does not
+// automatically receive its runtime context in this mode, so connect
+// the Lambda event before Express accesses any Blob store.
+module.exports.handler = async function handler(event, context) {
+  connectLambda(event);
+  return lambdaHandler(event, context);
+};
