@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="ms">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Blog & Tips Coway | Aliff Coway</title>
+<meta name="description" content="Panduan, tips dan artikel berkaitan penapis air, penapis udara dan penjagaan rumah.">
+<link rel="stylesheet" href="/style.css">
+<style>
+.blog-wrap{padding:80px max(24px,7vw)}.blog-head{max-width:700px;margin-bottom:35px}.blog-list{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.blog-card{border:1px solid #e8e8e8;border-radius:22px;padding:24px;background:#fff}.blog-card h2{font-size:22px;letter-spacing:-.04em}.blog-card p{color:#777;line-height:1.7;font-size:13px}.blog-card a{font-weight:800;font-size:12px}.article-page{padding:80px 20px;background:#f7f8fa;min-height:70vh}.article-wrap{max-width:850px;margin:auto;background:#fff;border:1px solid #e8e8e8;border-radius:28px;padding:clamp(25px,6vw,70px)}.article-wrap h1{font-size:clamp(38px,5vw,62px);line-height:1;letter-spacing:-.05em;margin:15px 0}.article-date{color:#888;font-size:12px}.article-content{font-size:16px;line-height:1.9;margin:35px 0}.article-cover{width:100%;border-radius:18px;margin-top:20px}.empty-blog{padding:40px 0;color:#777}@media(max-width:800px){.blog-list{grid-template-columns:1fr 1fr}}@media(max-width:560px){.blog-list{grid-template-columns:1fr}}
+</style></head>
+<body>
+<header class="header"><a class="brand" href="/"><span class="brand-mark">C</span><span>ALIFF <b>COWAY</b></span></a><nav><a href="/">Home</a><a href="/blog">Blog</a><a href="/#products">Produk</a><a href="/#contact">Hubungi</a></nav><a class="nav-cta" href="https://wa.me/?text=Hi%20Aliff%2C%20saya%20nak%20tahu%20promosi%20Coway." target="_blank">WhatsApp</a></header>
+<main class="blog-wrap"><div class="blog-head"><span class="eyebrow">COWAY INSIGHTS</span><h1>Blog & Tips</h1><p>Artikel dan panduan untuk membantu anda memahami produk, penjagaan rumah dan pilihan yang sesuai untuk keluarga.</p></div><div id="blogList" class="blog-list"></div></main>
+<script>
+fetch('/api/articles').then(r=>r.json()).then(items=>{
+ const el=document.getElementById('blogList');
+ if(!items.length){el.innerHTML='<div class="empty-blog">Belum ada artikel diterbitkan.</div>';return;}
+ el.innerHTML=items.map(a=>`<article class="blog-card"><span class="eyebrow">${new Date(a.date).toLocaleDateString('ms-MY')}</span><h2>${a.title}</h2><p>${a.excerpt||''}</p><a href="/blog/${encodeURIComponent(a.slug)}">Baca artikel →</a></article>`).join('');
+});
+</script></body></html>

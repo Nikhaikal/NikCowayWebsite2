@@ -1,0 +1,16 @@
+{
+  "name": "aliff-coway-sales-site-netlify",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "netlify dev"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^11.1.0",
+    "express": "^4.21.2",
+    "serverless-http": "^3.2.0"
+  },
+  "devDependencies": {
+    "netlify-cli": "^27.8.0"
+  }
+}
