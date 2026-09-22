@@ -7,6 +7,26 @@ const serverless = require("serverless-http");
 
 const app = express();
 app.use(express.json({ limit: "5mb" }));
+app.use((req, res, next) => {
+  const prefixes = [
+    "/.netlify/functions/api",
+    "/api"
+  ];
+
+  for (const prefix of prefixes) {
+    if (req.url === prefix) {
+      req.url = "/";
+      break;
+    }
+
+    if (req.url.startsWith(prefix + "/")) {
+      req.url = req.url.slice(prefix.length) || "/";
+      break;
+    }
+  }
+
+  next();
+});
 
 const ADMIN_USER = process.env.ADMIN_USER || "admin";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "CHANGE-ME-NOW";
