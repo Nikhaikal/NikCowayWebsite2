@@ -1,4 +1,4 @@
-# Aliff Coway Sales Site — V3 CMS
+# Nik Haikal Sales Site — V3 CMS
 
 Netlify-ready Coway sales website with a persistent admin CMS.
 
