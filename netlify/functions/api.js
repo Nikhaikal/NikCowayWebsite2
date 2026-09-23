@@ -168,27 +168,37 @@ app.get("/media/:id", async (req, res) => {
   try {
     const store = getStore(MEDIA_STORE);
 
-    const item = await store.getWithMetadata(req.params.id, {
-      type: "arrayBuffer"
+    const result = await store.getWithMetadata(req.params.id, {
+      type: "arrayBuffer",
+      consistency: "strong"
     });
 
-    if (!item || !item.data) {
+    if (!result || !result.data) {
+      console.error("MEDIA NOT FOUND:", req.params.id);
       return res.status(404).send("Image not found");
     }
 
     const contentType =
-      item.metadata?.contentType || "application/octet-stream";
+      result.metadata?.contentType || "image/jpeg";
 
+    console.log("MEDIA SERVED:", {
+      id: req.params.id,
+      contentType,
+      size: result.data.byteLength
+    });
+
+    res.status(200);
     res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Length", result.data.byteLength);
     res.setHeader(
       "Cache-Control",
       "public, max-age=31536000, immutable"
     );
 
-    res.send(Buffer.from(item.data));
+    res.end(Buffer.from(result.data));
 
   } catch (error) {
-    console.error("MEDIA LOAD ERROR:", error);
+    console.error("MEDIA ERROR:", error);
     res.status(500).send("Failed to load image");
   }
 });
