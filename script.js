@@ -2,7 +2,7 @@ let products = [
  {id:"neon",name:"NEON",code:"CHP-6210N",cat:"water",type:"Penapis Air",price:"RM59",old:"RM106.92",image:""},
  {id:"neo-plus",name:"NEO PLUS",code:"CHP-264L",cat:"water",type:"Penapis Air",price:"RM59",old:"RM117.72",image:""}
 ];
-let siteSettings={name:"ALIFF COWAY",whatsapp:"",email:"",tagline:"Promosi dan khidmat jualan Coway."};
+let siteSettings={name:"Nik Haikal COWAY",whatsapp:"",email:"",tagline:"Promosi dan khidmat jualan Coway."};
 const grid=document.getElementById("productGrid");
 function waUrl(message="Hi, saya nak tahu promosi Coway terkini."){
  const n=(siteSettings.whatsapp||"").replace(/\D/g,"");
@@ -21,7 +21,7 @@ function render(cat="all"){
    <div class="card-body">
     <small>${p.code||''}</small><h3>${p.name||''}</h3>
     <div class="price"><strong>${p.price||''}<small>/bulan</small></strong><span class="old">${p.old||''}</span></div>
-    <a class="btn" target="_blank" href="${waUrl(`Hi Aliff, saya berminat dengan ${p.name} (${p.code}). Boleh saya dapatkan promosi terkini?`)}">Semak Promosi</a>
+    <a class="btn" target="_blank" href="${waUrl(`Hi Nik Haikal, saya berminat dengan ${p.name} (${p.code}). Boleh saya dapatkan promosi terkini?`)}">Semak Promosi</a>
    </div>
  </article>`).join("");
 }
@@ -51,7 +51,7 @@ document.getElementById("leadForm").addEventListener("submit",e=>{
  e.preventDefault();
  const f=new FormData(e.target);
  const labels={ms:["Nama","No. IC","No. Telefon","No. Telefon Backup","Email","Alamat Pemasangan","Produk Diminati"],en:["Name","IC Number","Telephone Number","Backup Telephone Number","Email","Installation Address","Product Interested In"],zh:["姓名","身份证号码","电话号码","备用电话号码","电子邮箱","安装地址","感兴趣的产品"]}[currentLang];
- const intro={ms:"Hi Aliff, saya ingin membuat permohonan Coway.",en:"Hi Aliff, I would like to make a Coway application.",zh:"您好 Aliff，我想申请 Coway。"}[currentLang];
+ const intro={ms:"Hi Nik Haikal, saya ingin membuat permohonan Coway.",en:"Hi Nik Haikal, I would like to make a Coway application.",zh:"您好 Nik Haikal，我想申请 Coway。"}[currentLang];
  const product=e.target.querySelector('select[name="product"] option:checked').textContent;
  const msg=`${intro}%0A%0A${labels[0]}: ${encodeURIComponent(f.get("name"))}%0A${labels[1]}: ${encodeURIComponent(f.get("ic"))}%0A${labels[2]}: ${encodeURIComponent(f.get("phone"))}%0A${labels[3]}: ${encodeURIComponent(f.get("backup")||"-")}%0A${labels[4]}: ${encodeURIComponent(f.get("email"))}%0A${labels[5]}: ${encodeURIComponent(f.get("address"))}%0A${labels[6]}: ${encodeURIComponent(product)}`;
  window.open(waUrl(msg),"_blank");
