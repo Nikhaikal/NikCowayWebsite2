@@ -73,7 +73,20 @@ async function setCmsJson(key, value) {
 }
 async function saveMedia(contentType, data) {
   const id = crypto.randomUUID();
-  await getStore(MEDIA_STORE).setJSON(id, { contentType, data });
+
+  const buffer = Buffer.from(data, "base64");
+
+  const arrayBuffer = buffer.buffer.slice(
+    buffer.byteOffset,
+    buffer.byteOffset + buffer.byteLength
+  );
+
+  await getStore(MEDIA_STORE).set(id, arrayBuffer, {
+    metadata: {
+      contentType
+    }
+  });
+
   return `/api/media/${id}`;
 }
 function defaultSettings() {
@@ -151,14 +164,33 @@ app.get("/settings", async (req,res)=>{
 app.get("/products", async (req,res)=>{
   res.json(await getCmsJson(PRODUCTS_KEY, defaultProducts()));
 });
-app.get("/media/:id", async (req,res)=>{
+app.get("/media/:id", async (req, res) => {
   try {
-    const item = await getStore(MEDIA_STORE).get(req.params.id, { type:"json" });
-    if (!item || !item.data) return res.status(404).send("Not found");
-    res.setHeader("Content-Type", item.contentType || "application/octet-stream");
-    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-    res.send(Buffer.from(item.data, "base64"));
-  } catch { res.status(404).send("Not found"); }
+    const store = getStore(MEDIA_STORE);
+
+    const item = await store.getWithMetadata(req.params.id, {
+      type: "arrayBuffer"
+    });
+
+    if (!item || !item.data) {
+      return res.status(404).send("Image not found");
+    }
+
+    const contentType =
+      item.metadata?.contentType || "application/octet-stream";
+
+    res.setHeader("Content-Type", contentType);
+    res.setHeader(
+      "Cache-Control",
+      "public, max-age=31536000, immutable"
+    );
+
+    res.send(Buffer.from(item.data));
+
+  } catch (error) {
+    console.error("MEDIA LOAD ERROR:", error);
+    res.status(500).send("Failed to load image");
+  }
 });
 app.get("/admin/settings", auth, async (req,res)=>res.json(await getCmsJson(SETTINGS_KEY, defaultSettings())));
 app.put("/admin/settings", auth, async (req,res)=>{
