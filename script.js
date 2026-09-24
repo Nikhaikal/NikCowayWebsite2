@@ -17,7 +17,7 @@ function render(cat="all"){
  if(!grid)return;
  grid.innerHTML=products.filter(p=>cat==="all"||p.cat===cat).map(p=>`
  <article class="card">
-   <div class="product-image ${p.cat}" style="${p.image?`background-image:url('${p.image}');background-size:cover;background-position:center;`:''}">${p.image?'':`<span class="tag">${String(p.type||'PRODUCT').toUpperCase()}</span>`}</div>
+   <div class="product-image ${p.cat}" style="${p.image?`background-image:url('${p.image}');background-size:contain;background-position:center;`:''}">${p.image?'':`<span class="tag">${String(p.type||'PRODUCT').toUpperCase()}</span>`}</div>
    <div class="card-body">
     <small>${p.code||''}</small><h3>${p.name||''}</h3>
     <div class="price"><strong>${p.price||''}<small>/bulan</small></strong><span class="old">${p.old||''}</span></div>

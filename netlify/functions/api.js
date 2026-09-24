@@ -170,7 +170,6 @@ app.get("/media/:id", async (req, res) => {
 
     const result = await store.getWithMetadata(req.params.id, {
       type: "arrayBuffer",
-      consistency: "strong"
     });
 
     if (!result || !result.data) {
@@ -187,15 +186,12 @@ app.get("/media/:id", async (req, res) => {
       size: result.data.byteLength
     });
 
-    res.status(200);
-    res.setHeader("Content-Type", contentType);
-    res.setHeader("Content-Length", result.data.byteLength);
-    res.setHeader(
-      "Cache-Control",
-      "public, max-age=31536000, immutable"
-    );
+    res.status(200).set({
+  "Content-Type": contentType,
+  "Cache-Control": "public, max-age=31536000, immutable"
+});
 
-    res.end(Buffer.from(result.data));
+return res.end(Buffer.from(result.data));
 
   } catch (error) {
     console.error("MEDIA ERROR:", error);
@@ -279,12 +275,10 @@ app.get("/blog/:slug", async (req,res)=>{
 <main class="article-page"><div class="article-wrap"><span class="eyebrow">COWAY INSIGHTS</span><h1>${esc(a.title)}</h1><p class="article-date">${new Date(a.date).toLocaleDateString("ms-MY",{day:"numeric",month:"long",year:"numeric"})}</p>${a.coverImage?`<img class="article-cover" src="${esc(a.coverImage)}" alt="${esc(a.title)}">`:""}<article class="article-content">${content}</article><a class="btn primary" href="/">← Kembali ke Aliff Coway</a></div></main></body></html>`);
 });
 
-const lambdaHandler = serverless(app);
+const lambdaHandler = serverless(app, {
+  binary: ["image/*"]
+});
 
-// This project uses serverless-http, which runs as a Netlify
-// Lambda-compatible (Functions v1) handler. Netlify Blobs does not
-// automatically receive its runtime context in this mode, so connect
-// the Lambda event before Express accesses any Blob store.
 module.exports.handler = async function handler(event, context) {
   connectLambda(event);
   return lambdaHandler(event, context);
