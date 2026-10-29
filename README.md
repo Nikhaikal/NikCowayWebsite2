@@ -21,3 +21,7 @@ Manage:
 The public homepage loads website settings and products from the CMS automatically.
 
 See `NETLIFY-DEPLOY.md` for deployment instructions.
+
+## Product assets
+
+Store product images in `assets/products/` and enter their path (for example, `/assets/products/neon/main.webp`) in the product editor’s **Product image path** field. Both the homepage and individual product page use this path. Files must be included in the next deployment. Existing cloud uploads remain supported.

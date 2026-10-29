@@ -1,4 +1,4 @@
-# Aliff Coway V3 CMS — Netlify Deployment
+# Nik Haikal coway V3 CMS — Netlify Deployment
 
 This version adds a persistent CMS for website settings, products, product images, blog posts, blog cover images and SEO fields.
 
@@ -18,7 +18,7 @@ In Netlify → Project configuration → Environment variables, add:
 - `ADMIN_USER` — your admin username
 - `ADMIN_PASSWORD` — your admin password
 - `SESSION_SECRET` — a long random secret
-- `SITE_URL` — your production URL, e.g. `https://aliffcoway.com`
+- `SITE_URL` — your production URL, e.g. `https://your-site.netlify.app`
 
 Do not put the real password or session secret in GitHub or the ZIP.
 

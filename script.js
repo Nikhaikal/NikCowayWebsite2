@@ -2,31 +2,32 @@ let products = [
  {id:"neon",name:"NEON",code:"CHP-6210N",cat:"water",type:"Penapis Air",price:"RM59",old:"RM106.92",image:""},
  {id:"neo-plus",name:"NEO PLUS",code:"CHP-264L",cat:"water",type:"Penapis Air",price:"RM59",old:"RM117.72",image:""}
 ];
-let siteSettings={name:"Nik Haikal COWAY",whatsapp:"",email:"",tagline:"Promosi dan khidmat jualan Coway."};
+let siteSettings={name:"Nik Haikal COWAY",whatsapp:"60199881304",email:"",tagline:"Promosi dan khidmat jualan Coway."};
 const grid=document.getElementById("productGrid");
 function waUrl(message="Hi, saya nak tahu promosi Coway terkini."){
- const n=(siteSettings.whatsapp||"").replace(/\D/g,"");
+ const n=(siteSettings.whatsapp||"60199881304").replace(/\D/g,"");
  return n ? `https://wa.me/${n}?text=${encodeURIComponent(message)}` : `https://wa.me/?text=${encodeURIComponent(message)}`;
 }
 function applySettings(){
- document.querySelectorAll("[data-site-name]").forEach(el=>el.innerHTML=(siteSettings.name||"ALIFF COWAY").replace(/\b(COWAY)\b/i,"<b>$1</b>"));
+ document.querySelectorAll("[data-site-name]").forEach(el=>el.innerHTML=(siteSettings.name||"Nik Haikal coway").replace(/\b(COWAY)\b/i,"<b>$1</b>"));
  document.querySelectorAll("[data-site-tagline]").forEach(el=>el.textContent=siteSettings.tagline||"");
  document.querySelectorAll(".wa-link").forEach(a=>a.href=waUrl(a.textContent.includes("Cadangan")?"Hi, boleh cadangkan produk Coway untuk rumah saya?":"Hi, saya nak tahu promosi Coway terkini."));
 }
+function escapeHtml(value){return String(value || '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function render(cat="all"){
  if(!grid)return;
  grid.innerHTML=products.filter(p=>cat==="all"||p.cat===cat).map(p=>`
  <article class="card">
-   <div class="product-image ${p.cat}" style="${p.image?`background-image:url('${p.image}');background-size:contain;background-position:center;`:''}">${p.image?'':`<span class="tag">${String(p.type||'PRODUCT').toUpperCase()}</span>`}</div>
+   <a class="product-image" href="/products/${encodeURIComponent(p.id)}.html" aria-label="${escapeHtml(p.name)}">${p.image?`<img src="${escapeHtml(p.image)}" alt="${escapeHtml(p.name)}" loading="lazy">`:`<span class="tag">${escapeHtml(p.type||'PRODUCT')}</span>`}</a>
    <div class="card-body">
-    <small>${p.code||''}</small><h3>${p.name||''}</h3>
-    <div class="price"><strong>${p.price||''}<small>/bulan</small></strong><span class="old">${p.old||''}</span></div>
-    <a class="btn" target="_blank" href="${waUrl(`Hi Nik Haikal, saya berminat dengan ${p.name} (${p.code}). Boleh saya dapatkan promosi terkini?`)}">Semak Promosi</a>
+    <small>${escapeHtml(p.code)}</small><h3><a href="/products/${encodeURIComponent(p.id)}.html">${escapeHtml(p.name)}</a></h3>
+    <div class="price"><strong>${p.price ? `${escapeHtml(p.price)}<small>/bulan</small>` : "Hubungi untuk harga"}</strong><span class="old">${escapeHtml(p.old)}</span></div>
+    <a class="btn" href="/products/${encodeURIComponent(p.id)}.html">Lihat Produk</a>
    </div>
  </article>`).join("");
 }
 async function loadCms(){
- try{const [s,p]=await Promise.all([fetch('/api/settings').then(r=>r.json()),fetch('/api/products').then(r=>r.json())]);siteSettings=s||siteSettings;if(Array.isArray(p)&&p.length)products=p;}catch(e){}
+ try{const [s,p]=await Promise.all([fetch('/api/settings').then(r=>r.json()),fetch('/api/products').then(r=>r.json())]);siteSettings=s||siteSettings;if(Array.isArray(p))products=p;}catch(e){}
  applySettings(); render();
 }
 document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));btn.classList.add("active");render(btn.dataset.cat)}));
@@ -47,14 +48,33 @@ function setLanguage(lang){
 }
 document.querySelectorAll(".lang").forEach(b=>b.addEventListener("click",()=>setLanguage(b.dataset.lang)));
 
-document.getElementById("leadForm").addEventListener("submit",e=>{
+let pendingApplication = null;
+document.getElementById("leadForm").addEventListener("submit",async e=>{
  e.preventDefault();
  const f=new FormData(e.target);
  const labels={ms:["Nama","No. IC","No. Telefon","No. Telefon Backup","Email","Alamat Pemasangan","Produk Diminati"],en:["Name","IC Number","Telephone Number","Backup Telephone Number","Email","Installation Address","Product Interested In"],zh:["姓名","身份证号码","电话号码","备用电话号码","电子邮箱","安装地址","感兴趣的产品"]}[currentLang];
  const intro={ms:"Hi Nik Haikal, saya ingin membuat permohonan Coway.",en:"Hi Nik Haikal, I would like to make a Coway application.",zh:"您好 Nik Haikal，我想申请 Coway。"}[currentLang];
  const product=e.target.querySelector('select[name="product"] option:checked').textContent;
- const msg=`${intro}%0A%0A${labels[0]}: ${encodeURIComponent(f.get("name"))}%0A${labels[1]}: ${encodeURIComponent(f.get("ic"))}%0A${labels[2]}: ${encodeURIComponent(f.get("phone"))}%0A${labels[3]}: ${encodeURIComponent(f.get("backup")||"-")}%0A${labels[4]}: ${encodeURIComponent(f.get("email"))}%0A${labels[5]}: ${encodeURIComponent(f.get("address"))}%0A${labels[6]}: ${encodeURIComponent(product)}`;
- window.open(waUrl(msg),"_blank");
+ const values=[f.get("name"),f.get("ic"),f.get("phone"),f.get("backup")||"-",f.get("email"),f.get("address"),product];
+ const msg=[intro,"",...labels.map((label,index)=>`${label}: ${values[index]}`)].join("\n");
+ const url=waUrl(msg);
+ window.open(url,"_blank","noopener");
+ const link=document.getElementById('applicationWhatsapp');
+ link.href=url; link.hidden=false;
+ const status=document.getElementById('applicationStatus');
+ const button=e.target.querySelector('button[type="submit"]');
+ const payload={...Object.fromEntries(f),product,language:currentLang};
+ const fingerprint=JSON.stringify(payload);
+ if(!pendingApplication || pendingApplication.fingerprint!==fingerprint)pendingApplication={fingerprint,id:crypto.randomUUID()};
+ button.disabled=true;status.textContent='Membuka WhatsApp. Menyimpan permohonan…';
+ try {
+  const response=await fetch('/api/applications',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...payload,id:pendingApplication.id})});
+  const result=await response.json();
+  if(!response.ok || !result.ok)throw new Error(result.error || 'Permohonan belum disahkan tersimpan. Sila hantar melalui WhatsApp.');
+  status.textContent='Permohonan disimpan ke Google Sheets. Sila tekan Hantar dalam WhatsApp untuk menghantar mesej.';
+ }catch(error){status.textContent=error.message || 'Tidak dapat menyimpan permohonan. Sila hantar melalui WhatsApp.';}
+ finally{button.disabled=false;}
+
 });
 setLanguage("ms");
 

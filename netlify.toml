@@ -1,8 +1,10 @@
 [build]
+  command = "npm run build"
   publish = "."
   functions = "netlify/functions"
 
 [functions]
+  included_files = ["assets/products/**"]
   external_node_modules = ["express", "serverless-http", "@netlify/blobs"]
   node_bundler = "esbuild"
 
@@ -21,5 +23,11 @@
 [[redirects]]
   from = "/blog"
   to = "/blog.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/products/:product"
+  to = "/.netlify/functions/api/products/:product"
   status = 200
   force = true

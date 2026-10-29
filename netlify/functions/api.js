@@ -5,6 +5,10 @@ const path = require("path");
 const { getStore, connectLambda } = require("@netlify/blobs");
 const serverless = require("serverless-http");
 
+const { page: productPage, tags: productTags } = require("./product-page");
+const { sheetUrl, testimonials } = require("../../lib/testimonials");
+const { defaultSettings, defaultProducts, mergeProducts, resolveProduct } = require("../../lib/catalogue");
+const { application, saveApplication } = require("../../lib/applications");
 const app = express();
 app.use(express.json({ limit: "5mb" }));
 app.use((req, res, next) => {
@@ -32,13 +36,14 @@ const ADMIN_USER = process.env.ADMIN_USER || "admin";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "CHANGE-ME-NOW";
 const SESSION_SECRET = process.env.SESSION_SECRET || "CHANGE-ME-SESSION-SECRET";
 const SITE_URL = (process.env.SITE_URL || "").replace(/\/$/, "") || "http://localhost:8888";
-const COOKIE = "aliff_admin";
-const STORE = "aliff-coway-blog";
+// Keep legacy cookie and storage identifiers so existing sessions, products and images remain accessible.
+const COOKIE = "NikHaikal_admin";
+const STORE = "NikHaikal-coway-blog";
 const KEY = "articles.json";
-const CMS_STORE = "aliff-coway-cms";
+const CMS_STORE = "NikHaikal-coway-cms";
 const SETTINGS_KEY = "settings.json";
 const PRODUCTS_KEY = "products.json";
-const MEDIA_STORE = "aliff-coway-media";
+const MEDIA_STORE = "NikHaikal-coway-media";
 
 function sign(value) {
   return crypto.createHmac("sha256", SESSION_SECRET).update(value).digest("base64url");
@@ -65,6 +70,18 @@ async function getCmsJson(key, fallback) {
   try {
     const store = getStore(CMS_STORE);
     const data = await store.get(key, { type: "json" });
+    if (key === SETTINGS_KEY && data && typeof data.name === 'string') {
+      data.name = data.name.replace(/Nik Haikal\s+coway/gi, 'Nik Haikal coway');
+    }
+    // Upgrade previously saved contact settings without changing customer phone numbers.
+    if (key === SETTINGS_KEY && data && data.contactPhoneVersion !== 1) {
+      data.whatsapp = '60199881304';
+      data.contactPhoneVersion = 1;
+    }
+    if (key === SETTINGS_KEY && data && data.testimonialsFeedVersion !== 1 && !data.testimonialsSheetUrl) {
+      data.testimonialsSheetUrl = defaultSettings().testimonialsSheetUrl;
+      data.testimonialsFeedVersion = 1;
+    }
     return data == null ? fallback : data;
   } catch { return fallback; }
 }
@@ -88,25 +105,6 @@ async function saveMedia(contentType, data) {
   });
 
   return `/api/media/${id}`;
-}
-function defaultSettings() {
-  return { name:"ALIFF COWAY", whatsapp:"", email:"", tagline:"Promosi dan khidmat jualan Coway." };
-}
-function defaultProducts() {
-  return [
-   {id:"neon",name:"NEON",code:"CHP-6210N",cat:"water",type:"Penapis Air",price:"RM59",old:"RM106.92",image:""},
-   {id:"neo-plus",name:"NEO PLUS",code:"CHP-264L",cat:"water",type:"Penapis Air",price:"RM59",old:"RM117.72",image:""},
-   {id:"villaem-iii",name:"VILLAEM III",code:"CHP-7320L",cat:"water",type:"Penapis Air",price:"RM74",old:"RM133.92",image:""},
-   {id:"dazzie",name:"DAZZIE",code:"CHP-1201N",cat:"water",type:"Penapis Air",price:"RM79",old:"RM128.52",image:""},
-   {id:"lombok-iii",name:"LOMBOK III",code:"AP-1520C",cat:"air",type:"Penapis Udara",price:"RM60",old:"RM129.60",image:""},
-   {id:"noble-ii",name:"NOBLE II",code:"AP-2023K",cat:"air",type:"Penapis Udara",price:"RM95",old:"RM145.80",image:""},
-   {id:"studio",name:"STUDIO",code:"AP-1924A",cat:"air",type:"Penapis Udara",price:"RM49",old:"RM101.52",image:""},
-   {id:"storm-ii",name:"STORM II",code:"AP-1523D",cat:"air",type:"Penapis Udara",price:"RM60",old:"RM118.80",image:""},
-   {id:"outdoor-filter",name:"OUTDOOR FILTER",code:"POE-23A",cat:"home",type:"Outdoor Filter",price:"RM60",old:"RM108",image:""},
-   {id:"washer-dryer",name:"WASHER DRYER",code:"12KG",cat:"home",type:"Washer Dryer",price:"RM99",old:"RM159",image:""},
-   {id:"air-conditioner",name:"AIR CONDITIONER",code:"INVERTER",cat:"home",type:"Air Conditioner",price:"RM89",old:"RM129",image:""},
-   {id:"massage-chair",name:"MASSAGE CHAIR",code:"BEREX",cat:"home",type:"Massage Chair",price:"RM149",old:"RM199",image:""}
-  ];
 }
 
 function auth(req,res,next) {
@@ -158,11 +156,61 @@ app.post("/logout", auth, (req,res) => {
   res.json({ok:true});
 });
 
+app.post('/applications', async (req,res)=>{
+ let data;
+ try { data=application(req.body); } catch(error) { return res.status(400).json({error:error.message}); }
+ const result=await saveApplication(data);
+ return res.status(result.status).json(result.ok ? {ok:true} : {error:result.error});
+});
+
 app.get("/settings", async (req,res)=>{
   res.json(await getCmsJson(SETTINGS_KEY, defaultSettings()));
 });
+app.get('/testimonials', async (req,res) => {
+  try {
+    const settings=await getCmsJson(SETTINGS_KEY, defaultSettings());
+    const source=sheetUrl(settings.testimonialsSheetUrl || '');
+    if(!source)return res.json([]);
+    const response=await fetch(source,{signal:AbortSignal.timeout(10000)});
+    if(!response.ok)throw new Error('Sheet unavailable');
+    const csv=await response.text();
+    if(csv.length>2000000)throw new Error('Sheet too large');
+    res.set('Cache-Control','public, max-age=60').json(testimonials(csv));
+  } catch(error) { console.error('Testimonials:',error.message);res.status(502).json({error:'Unable to load testimonials'}); }
+});
 app.get("/products", async (req,res)=>{
-  res.json(await getCmsJson(PRODUCTS_KEY, defaultProducts()));
+  res.json(mergeProducts(await getCmsJson(PRODUCTS_KEY, defaultProducts())));
+});
+// Each product gets a server-rendered HTML page, including products added in admin.
+app.get("/products/:id.html", async (req,res,next) => {
+  try {
+    const products = mergeProducts(await getCmsJson(PRODUCTS_KEY, defaultProducts()));
+    const product = resolveProduct(mergeProducts(products), req.params.id);
+    if (!product) return res.status(404).send('<h1>Produk tidak ditemui</h1><a href="/#products">Semua Produk</a>');
+    res.type('html').send(productPage(product, await getCmsJson(SETTINGS_KEY, defaultSettings())));
+  } catch (error) { next(error); }
+});
+app.get("/products/:id/reviews", async (req,res,next) => {
+  try {
+    const products = mergeProducts(await getCmsJson(PRODUCTS_KEY, defaultProducts()));
+    if (!products.some(p => p.id === req.params.id)) return res.status(404).json({error:'Product not found'});
+    const store = getStore({name:'coway-product-reviews', consistency:process.env.NETLIFY_DEV === 'true' ? 'eventual' : 'strong'});
+    const { blobs } = await store.list({prefix: encodeURIComponent(req.params.id) + '/'});
+    const reviews = await Promise.all(blobs.map(blob => store.get(blob.key, {type:'json'})));
+    res.set('Cache-Control', 'no-store').json(reviews.filter(Boolean).map(({id,name,message,date,rating}) => ({id,name,message,date,rating:Number.isInteger(rating) && rating >= 1 && rating <= 5 ? rating : null})).sort((a,b)=>b.date.localeCompare(a.date)));
+  } catch (error) { next(error); }
+});
+app.post("/products/:id/reviews", async (req,res,next) => {
+  try {
+    const products = mergeProducts(await getCmsJson(PRODUCTS_KEY, defaultProducts()));
+    if (!products.some(p => p.id === req.params.id)) return res.status(404).json({error:'Product not found'});
+    const {name,phone,message,rating} = req.body || {};
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) return res.status(400).json({error:"Sila pilih penilaian 1 hingga 5 bintang."});
+    if (typeof name !== 'string' || !name.trim() || name.length > 100 || typeof message !== 'string' || !message.trim() || message.length > 3000 || typeof phone !== 'string' || phone.length > 25 || !/^\+?[\d\s()-]+$/.test(phone) || phone.replace(/\D/g,'').length < 8 || phone.replace(/\D/g,'').length > 15) return res.status(400).json({error:'Sila isi nama, nombor telefon yang sah dan ulasan (maksimum 3000 aksara).'});
+    const review = {id:crypto.randomUUID(), rating, name:name.trim(), phone:phone.trim(), message:message.trim(), date:new Date().toISOString()};
+    await getStore({name:'coway-product-reviews', consistency:process.env.NETLIFY_DEV === 'true' ? 'eventual' : 'strong'}).setJSON(encodeURIComponent(req.params.id) + '/' + review.id, review);
+    res.status(201).json({ok:true});
+  } catch (error) { next(error); }
 });
 app.get("/media/:id", async (req, res) => {
   try {
@@ -202,7 +250,10 @@ app.get("/admin/settings", auth, async (req,res)=>res.json(await getCmsJson(SETT
 app.put("/admin/settings", auth, async (req,res)=>{
   const current=await getCmsJson(SETTINGS_KEY, defaultSettings());
   const body=req.body||{};
-  const settings={...current,name:String(body.name||current.name).slice(0,100),whatsapp:String(body.whatsapp||"").replace(/\D/g,"").slice(0,20),email:String(body.email||"").slice(0,200),tagline:String(body.tagline||current.tagline).slice(0,200)};
+  let testimonialsSheetUrl;
+  try { testimonialsSheetUrl=sheetUrl(body.testimonialsSheetUrl ?? current.testimonialsSheetUrl ?? ''); }
+  catch(error) { return res.status(400).json({error:error.message}); }
+  const settings={...current,testimonialsSheetUrl,testimonialsFeedVersion:1,name:String(body.name||current.name).slice(0,100),contactPhoneVersion:1,whatsapp:String(body.whatsapp||"60199881304").replace(/\D/g,"").slice(0,20),email:String(body.email||"").slice(0,200),tagline:String(body.tagline||current.tagline).slice(0,200)};
   await setCmsJson(SETTINGS_KEY,settings); res.json(settings);
 });
 app.post("/admin/media", auth, async (req,res)=>{
@@ -216,12 +267,12 @@ app.get("/admin/products", auth, async (req,res)=>res.json(await getCmsJson(PROD
 app.post("/admin/products", auth, async (req,res)=>{
   const body=req.body||{}; if(!body.name) return res.status(400).json({error:"Product name is required"});
   const items=await getCmsJson(PRODUCTS_KEY, defaultProducts());
-  const p={id:crypto.randomUUID(),name:String(body.name),code:String(body.code||""),cat:String(body.cat||"home"),type:String(body.type||"Product"),price:String(body.price||""),old:String(body.old||""),image:String(body.image||"")};
+  const p={id:crypto.randomUUID(),name:String(body.name),code:String(body.code||""),cat:String(body.cat||"home"),type:String(body.type||"Product"),price:String(body.price||""),old:String(body.old||""),image:String(body.image||""),tags:productTags(body.tags),description:String(body.description||"").slice(0,30000)};
   items.push(p); await setCmsJson(PRODUCTS_KEY,items); res.status(201).json(p);
 });
 app.put("/admin/products/:id", auth, async (req,res)=>{
   const items=await getCmsJson(PRODUCTS_KEY, defaultProducts()); const i=items.findIndex(x=>x.id===req.params.id); if(i<0)return res.status(404).json({error:"Not found"});
-  items[i]={...items[i],...(req.body||{}),id:items[i].id}; await setCmsJson(PRODUCTS_KEY,items); res.json(items[i]);
+  items[i]={...items[i],...(req.body||{}),id:items[i].id,tags:productTags(req.body.tags ?? items[i].tags),description:String(req.body.description ?? items[i].description ?? "").slice(0,30000)}; await setCmsJson(PRODUCTS_KEY,items); res.json(items[i]);
 });
 app.delete("/admin/products/:id", auth, async (req,res)=>{const items=await getCmsJson(PRODUCTS_KEY,defaultProducts()).then(x=>x.filter(p=>p.id!==req.params.id));await setCmsJson(PRODUCTS_KEY,items);res.json({ok:true});});
 
@@ -271,10 +322,14 @@ app.get("/blog/:slug", async (req,res)=>{
   res.send(`<!doctype html><html lang="ms"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(a.seoTitle)}</title><meta name="description" content="${esc(a.seoDescription)}"><meta name="keywords" content="${esc(a.keywords)}">
 <link rel="canonical" href="${esc(canonical)}"><meta property="og:title" content="${esc(a.seoTitle)}"><meta property="og:description" content="${esc(a.seoDescription)}">
-<link rel="stylesheet" href="/style.css"></head><body><header class="header"><a class="brand" href="/"><span class="brand-mark">C</span><span>ALIFF <b>COWAY</b></span></a><nav><a href="/">Home</a><a href="/blog">Blog</a></nav></header>
-<main class="article-page"><div class="article-wrap"><span class="eyebrow">COWAY INSIGHTS</span><h1>${esc(a.title)}</h1><p class="article-date">${new Date(a.date).toLocaleDateString("ms-MY",{day:"numeric",month:"long",year:"numeric"})}</p>${a.coverImage?`<img class="article-cover" src="${esc(a.coverImage)}" alt="${esc(a.title)}">`:""}<article class="article-content">${content}</article><a class="btn primary" href="/">← Kembali ke Aliff Coway</a></div></main></body></html>`);
+<link rel="stylesheet" href="/style.css"></head><body><header class="header"><a class="brand" href="/"><span class="brand-mark">C</span><span>Nik Haikal <b>coway</b></span></a><nav><a href="/">Home</a><a href="/blog">Blog</a></nav></header>
+<main class="article-page"><div class="article-wrap"><span class="eyebrow">COWAY INSIGHTS</span><h1>${esc(a.title)}</h1><p class="article-date">${new Date(a.date).toLocaleDateString("ms-MY",{day:"numeric",month:"long",year:"numeric"})}</p>${a.coverImage?`<img class="article-cover" src="${esc(a.coverImage)}" alt="${esc(a.title)}">`:""}<article class="article-content">${content}</article><a class="btn primary" href="/">← Kembali ke Nik Haikal coway</a></div></main></body></html>`);
 });
 
+app.use((error,req,res,next) => {
+  console.error(error);
+  res.status(500).json({error:'Perkhidmatan tidak tersedia. Sila cuba lagi.'});
+});
 const lambdaHandler = serverless(app, {
   binary: ["image/*"]
 });

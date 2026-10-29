@@ -674,3 +674,90 @@ textarea {
     padding: 13px;
   }
 }
+
+/* Individual product pages */
+.product-header { justify-content: space-between; }
+.product-header > a:last-child { font-size: 13px; }
+.product-page { max-width: 1440px; margin: auto; padding-top: 32px; }
+.breadcrumb, .product-code, .product-note { color: var(--muted); font-size: 13px; line-height: 1.7; }
+.product-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; margin: 32px 0 64px; }
+.product-detail h1 { font-size: clamp(32px, 5vw, 60px); letter-spacing: -.04em; margin: 16px 0; overflow-wrap: anywhere; }
+.product-visual { min-height: 380px; border-radius: 24px; background: var(--bg); display: grid; place-items: center; padding: 28px; }
+.product-visual img { width: 100%; max-height: 480px; object-fit: contain; }
+.product-image img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: 14px;
+  object-fit: contain;
+  object-position: center;
+}
+.product-tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0; }
+.product-tags span { border: 1px solid var(--line); border-radius: 99px; padding: 8px 12px; font-size: 12px; }
+.product-detail .price strong { font-size: 36px; }
+.product-detail .price small { font-size: 14px; font-weight: 400; }
+.product-tabs { border-bottom: 1px solid var(--line); padding-bottom: 20px; }
+.long-description, .customer-review p { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; }
+.long-description { max-width: 900px; min-height: 140px; }
+.customer-review { border-bottom: 1px solid var(--line); padding: 20px 0; }
+.customer-review h3 { margin: 0 0 8px; }
+.customer-review small { color: var(--muted); }
+#reviewForm { max-width: 760px; margin-top: 36px; }
+#reviewForm h3, #reviewStatus { margin: 0; }
+#testimonials { scroll-margin-top: 78px; }
+button:disabled { opacity: .6; cursor: wait; }
+:focus-visible { outline: 3px solid var(--blue); outline-offset: 4px; }
+[hidden] { display: none !important; }
+@media(max-width: 700px) { .product-detail { grid-template-columns: 1fr; gap: 28px; } .product-visual { min-height: 260px; } .product-header { gap: 16px; } }
+
+#testimonialsList { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.testimonial-card { border: 1px solid var(--line); border-radius: 22px; overflow: hidden; background: white; }
+.testimonial-photo { position: relative; aspect-ratio: 1 / 1; background: var(--bg); isolation: isolate; user-select: none; }
+.testimonial-image { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; -webkit-user-drag: none; }
+.testimonial-watermark { position: absolute; width: 42%; max-width: 200px; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: .22; pointer-events: none; -webkit-user-drag: none; filter: drop-shadow(0 1px 3px #fff8); }
+.photo-unavailable::before { content: 'Gambar tidak tersedia'; position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 13px; }
+.testimonial-body { padding: 22px; }
+.testimonial-body h3 { font-size: 17px; margin: 0 0 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.testimonial-body p { white-space: pre-wrap; line-height: 1.7; color: var(--muted); font-size: 14px; margin: 0; overflow-wrap: anywhere; }
+@media(max-width:900px){ #testimonialsList { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media(max-width:560px){ #testimonialsList { grid-template-columns: 1fr; } }
+
+/* Product review ratings */
+.rating-picker { border: 0; padding: 0; margin: 20px 0; }
+.rating-options { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.rating-options label { position: relative; cursor: pointer; }
+.rating-options input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.rating-options label > span { display: block; text-align: center; }
+.rating-options label { border: 2px solid #737373; border-radius: 10px; padding: 8px 12px; }
+.rating-options label:has(input:checked) { border-color: #925700; background: #fff1cf; color: #382200; }
+.rating-options label:has(input:focus-visible) { outline: 3px solid #1671bd; outline-offset: 3px; }
+.rating-options span[aria-hidden] { color: #925700; font-size: 26px; }
+.review-stars { color: #925700; font-size: 22px; letter-spacing: 2px; }
+#ratingSummary { font-weight: 700; margin-bottom: 20px; }
+
+.product-options { margin: 28px 0; }
+.variant-grid { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
+.variant-link { display: inline-flex; align-items: center; gap: 10px; border: 2px solid #888; border-radius: 10px; padding: 12px 16px; text-decoration: none; }
+.variant-link.selected { border-color: #145d80; background: #e8f5fa; color: #133b4f; font-weight: 700; }
+.variant-link:focus-visible { outline: 3px solid #1671bd; outline-offset: 3px; }
+.colour-swatch { width: 24px; height: 24px; border-radius: 50%; border: 1px solid #777; flex-shrink: 0; }
+/* One main view with a horizontal product thumbnail strip. */
+.product-detail > * { min-width: 0; }
+.product-visual:has(.product-gallery) { display: block; padding: 16px; min-width: 0; background: #fff; }
+.product-gallery { width: 100%; }
+.gallery-stage { position: relative; aspect-ratio: 1; background: #fff; border-radius: 12px; overflow: hidden; }
+.product-visual .gallery-image { display: block; width: 100%; height: 100%; max-height: none; object-fit: contain; }
+.gallery-counter { position: absolute; right: 12px; bottom: 12px; padding: 5px 10px; border-radius: 20px; background: #183b4bd9; color: #fff; font-size: 13px; }
+.gallery-thumbnails { display: flex; gap: 8px; overflow-x: auto; padding: 8px 2px; margin-top: 8px; }
+.gallery-thumbnail { flex: 0 0 68px; width: 68px; height: 68px; padding: 3px; background: #fff; border: 2px solid #d9dfe3; border-radius: 8px; cursor: pointer; }
+.gallery-thumbnail img { width: 100%; height: 100%; display: block; object-fit: contain; }
+.gallery-thumbnail[aria-pressed="true"] { border-color: #145d80; box-shadow: 0 0 0 1px #145d80; }
+.gallery-thumbnail:focus-visible { outline: 3px solid #1671bd; outline-offset: 2px; }
+@media(max-width:560px) { .gallery-thumbnail { flex-basis: 60px; width: 60px; height: 60px; } }
+.product-photo-pending { text-align: center; padding: 24px; }
+.all-options { display: inline-block; margin-top: 20px; }
